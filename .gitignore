@@ -18,6 +18,11 @@ ai_engine/vector_db/
 # Generated files
 generated_pdfs/
 
+# Frontend
+frontend/.env.local
+frontend/node_modules/
+frontend/.next/
+
 # OS
 .DS_Store
 
