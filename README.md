@@ -155,13 +155,63 @@ dev       active development — merge features here
 feature/* day-to-day work branches
 ```
 
-Always branch off `dev`:
+---
+
+## Daily Workflow
+
+### Starting a new feature
+
 ```bash
+# 1. always start from dev
 git checkout dev
+git pull origin dev
+
+# 2. create a feature branch
 git checkout -b feature/your-feature-name
 ```
 
-Merge back to `dev` when done. Only `dev → main` when a full phase is complete.
+### While working
+
+```bash
+# commit often — one logical change per commit
+git add .
+git commit -m "short description of what you did"
+```
+
+### When the feature is done
+
+```bash
+# 3. merge back into dev
+git checkout dev
+git merge feature/your-feature-name
+
+# 4. push dev to GitHub
+git push origin dev
+
+# 5. delete the feature branch (keep things clean)
+git branch -d feature/your-feature-name
+```
+
+### When a full phase is complete → ship to main
+
+```bash
+git checkout main
+git merge dev
+git push origin main
+```
+
+### Feature branch naming
+
+```
+feature/school-model
+feature/jwt-auth
+feature/student-agent
+feature/teacher-agent
+feature/rag-per-school
+feature/chat-history
+feature/frontend-login
+feature/frontend-chat-ui
+```
 
 ---
 
