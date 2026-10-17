@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Env
+.env
+
+# Django
+backend/db.sqlite3
+backend/staticfiles/
+
+# Vector stores
+ai_engine/vector_db/
+
+# Generated files
+generated_pdfs/
+
+# OS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
