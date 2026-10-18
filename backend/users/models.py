@@ -5,6 +5,7 @@ from schools.models import School
 
 class User(AbstractUser):
     class Role(models.TextChoices):
+        COMPANY_ADMIN = "company_admin", "Company Admin"
         STUDENT = "student", "Student"
         TEACHER = "teacher", "Teacher"
         PRINCIPAL = "principal", "Principal"

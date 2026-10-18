@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const ROLE_ROUTES: Record<string, string> = {
+  company_admin: "/dashboard/admin",
   student: "/dashboard/student",
   teacher: "/dashboard/teacher",
   principal: "/dashboard/principal",
