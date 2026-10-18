@@ -26,7 +26,11 @@ INSTALLED_APPS = [
     # local
     "schools",
     "users",
+    "authentication",
 ]
+
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
