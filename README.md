@@ -1,129 +1,117 @@
 # CampusAI
 
-An AI-powered, multi-agent platform for schools. Every school gets its own branded AI assistant with role-based agents for students, teachers, principals, office staff, and parents.
+CampusAI is a school-focused platform with a Django API, a FastAPI AI service, and a Next.js web app.
 
----
+## Project layout
 
-## Project Structure
-
-```
-campusai/
-├── backend/        Django — auth, school management, user management
-├── ai_engine/      FastAPI — AI agent routing and chat endpoints
-└── frontend/       Next.js — white-labeled chat UI (coming soon)
+```text
+backend/       Django API, authentication, schools and users
+ai_engine/     FastAPI chat service and student RAG agent
+frontend/      Next.js web application
+docker-compose.yml
 ```
 
----
+## Quick setup on a new laptop (Docker)
 
-## Prerequisites
+Docker is the simplest way to run all three services. Install [Git](https://git-scm.com/), [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine with the Compose plugin), then clone the repository. Use the `dev` branch for the latest development code:
 
-- Python 3.12+
-- [`uv`](https://docs.astral.sh/uv/) — Python package manager
-- Node.js 18+ (for frontend, later)
+```bash
+git clone --branch dev https://github.com/Rayyan934/campusAI.git
+cd campusAI
+```
 
----
+Create local environment files from the examples:
 
-## Backend (Django)
+```bash
+cp backend/.env.example backend/.env
+cp ai_engine/.env.example ai_engine/.env
+cp frontend/.env.example frontend/.env.local
+```
 
-### 1. Install dependencies
+Open `ai_engine/.env` and set `GOOGLE_API_KEY` to a [Google AI Studio API key](https://aistudio.google.com/apikey) to use AI chat. The backend and frontend work locally with the example values. The email settings in `backend/.env` are only needed to send OTP emails; configure a Resend API key and verified sender if you want that feature to deliver email.
+
+Build and start the services:
+
+```bash
+docker compose up --build -d
+```
+
+Apply Django database migrations and create your own admin login:
+
+```bash
+docker compose exec backend uv run python manage.py migrate
+docker compose exec backend uv run python manage.py createsuperuser
+```
+
+Open the services:
+
+- Web app: <http://localhost:3000>
+- Django API and admin: <http://localhost:8000> and <http://localhost:8000/admin/>
+- AI Engine API docs: <http://localhost:8001/docs>
+- AI Engine health check: <http://localhost:8001/health>
+
+Stop the services with `docker compose down`. To start them again later, use `docker compose up -d` from the project directory. Your source files and local environment files stay on your laptop; Django's SQLite database is at `backend/db.sqlite3`.
+
+## Local setup without Docker
+
+Install Python 3.12 or later, [`uv`](https://docs.astral.sh/uv/getting-started/installation/), and Node.js 20 or later. From the project root, create the same three environment files using the `cp` commands above, then set the AI key if you want to use chat. Open three terminal windows, each starting in the project root.
+
+**Terminal 1 — Django backend**
 
 ```bash
 cd backend
-uv sync
-```
-
-### 2. Set up environment variables
-
-```bash
-cp .env.example .env
-# Edit .env and fill in your values
-```
-
-### 3. Run migrations
-
-```bash
+uv sync --frozen
 uv run python manage.py migrate
-```
-
-### 4. Create a superuser (company admin)
-
-```bash
-uv run python manage.py createsuperuser
-```
-
-### 5. Start the server
-
-```bash
+uv run python manage.py createsuperuser  # one time; create your own login
 uv run python manage.py runserver
 ```
 
-Backend runs at: `http://localhost:8000`
-
-Django Admin panel: `http://localhost:8000/admin/`
-
----
-
-## AI Engine (FastAPI)
-
-### 1. Install dependencies
+**Terminal 2 — AI Engine**
 
 ```bash
 cd ai_engine
-uv sync
-```
-
-### 2. Set up environment variables
-
-```bash
-cp .env.example .env
-# Add your GOOGLE_API_KEY
-```
-
-### 3. Start the server
-
-```bash
+uv sync --frozen
 uv run uvicorn main:app --reload --port 8001
 ```
 
-AI Engine runs at: `http://localhost:8001`
+**Terminal 3 — frontend**
 
-API docs (auto-generated): `http://localhost:8001/docs`
+```bash
+cd frontend
+npm ci
+npm run dev
+```
 
----
+The frontend expects the backend at `http://localhost:8000` and AI Engine at `http://localhost:8001`; those defaults are in `frontend/.env.local`. Restart the frontend after changing its environment file.
 
-## API Overview
+## Troubleshooting
 
-### Auth
+- **The browser shows an empty or unavailable service:** confirm Docker is running and all three services started with `docker compose ps`; see service logs with `docker compose logs -f backend`, `docker compose logs -f ai_engine`, or `docker compose logs -f frontend`.
+- **Admin or API reports missing database tables:** run `docker compose exec backend uv run python manage.py migrate` (Docker), or `cd backend && uv run python manage.py migrate` (local).
+- **AI chat returns an error or no agent/documents:** set a valid `GOOGLE_API_KEY` in `ai_engine/.env`, restart the service, and confirm the requested school's documents exist under `ai_engine/data/<school_id>/`.
+- **A port is already in use:** stop the other process using port 3000, 8000, or 8001, or adjust the port mapping in `docker-compose.yml`.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/login/` | Login — returns JWT access + refresh tokens |
-| POST | `/api/auth/refresh/` | Refresh access token |
+## API overview
 
-### Schools (admin only)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/schools/` | List all schools |
-| POST | `/api/schools/` | Create a new school |
-| GET | `/api/schools/{id}/` | Get school details |
-| PUT | `/api/schools/{id}/` | Update school |
-
-### Users (admin only)
+### Authentication and school management (Django)
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users/` | List users in your school |
-| POST | `/api/users/` | Add a new user |
+| --- | --- | --- |
+| `POST` | `/api/auth/login/` | Obtain JWT access and refresh tokens |
+| `POST` | `/api/auth/refresh/` | Refresh an access token |
+| `GET`, `POST` | `/api/schools/` | List or create schools (admin access) |
+| `GET`, `PUT` | `/api/schools/{id}/` | View or update a school |
+| `GET`, `POST` | `/api/users/` | List or add users (admin access) |
 
 ### Chat (AI Engine)
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| POST | `/chat` | Send a message to the agent |
+| --- | --- | --- |
+| `GET` | `/health` | Health check |
+| `POST` | `/chat` | Send a message to a role agent |
 
-Chat request body:
+Example request body:
+
 ```json
 {
   "school_id": 1,
@@ -133,105 +121,34 @@ Chat request body:
 }
 ```
 
----
+The current AI Engine has a student agent. It needs school documents in `ai_engine/data/<school_id>/` and a Google API key; other roles are not yet implemented in the AI Engine.
 
-## User Roles
+## User roles
 
-| Role | Description |
-|------|-------------|
-| `student` | Routed to Student Agent — Q&A from school's textbooks |
-| `teacher` | Routed to Teacher Agent — lesson plans, worksheets |
-| `principal` | Routed to Principal Agent — circulars, speeches |
-| `office` | Routed to Office Agent — certificates, notices |
-| `parent` | Routed to Parent Agent — child guidance, communication |
+| Role | Intended use |
+| --- | --- |
+| `student` | Textbook question answering |
+| `teacher` | Lesson plans and worksheets |
+| `principal` | Circulars and speeches |
+| `office` | Certificates and notices |
+| `parent` | Child guidance and communication |
 
----
+## Development workflow
 
-## Branch Strategy
-
-```
-main      production-ready snapshots only
-dev       active development — merge features here
-feature/* day-to-day work branches
-```
-
----
-
-## Daily Workflow
-
-### Starting a new feature
+The `dev` branch is for active work; `main` is for release snapshots. Start work from an updated `dev` branch:
 
 ```bash
-# 1. always start from dev
-git checkout dev
+git switch dev
 git pull origin dev
-
-# 2. create a feature branch
-git checkout -b feature/your-feature-name
+git switch -c feature/your-feature-name
 ```
 
-### While working
+Commit your changes and push the feature branch when ready:
 
 ```bash
-# commit often — one logical change per commit
 git add .
-git commit -m "short description of what you did"
+git commit -m "Describe your change"
+git push -u origin feature/your-feature-name
 ```
 
-### When the feature is done
-
-```bash
-# 3. merge back into dev
-git checkout dev
-git merge feature/your-feature-name
-
-# 4. push dev to GitHub
-git push origin dev
-
-# 5. delete the feature branch (keep things clean)
-git branch -d feature/your-feature-name
-```
-
-### When a full phase is complete → ship to main
-
-```bash
-git checkout main
-git merge dev
-git push origin main
-```
-
-### Feature branch naming
-
-```
-feature/school-model
-feature/jwt-auth
-feature/student-agent
-feature/teacher-agent
-feature/rag-per-school
-feature/chat-history
-feature/frontend-login
-feature/frontend-chat-ui
-```
-
----
-
-## Onboarding a New School
-
-1. Log in to Django Admin at `/admin/`
-2. Create a **School** record (name, slug, AI name, branding colors)
-3. Create a **User** record for the school admin (role: `principal`)
-4. Share login credentials with the school
-5. School admin logs in and adds their own teachers/students
-
----
-
-## Roadmap
-
-- [x] Phase 1 — Django backend: School + User models, JWT auth
-- [x] Phase 1 — FastAPI AI engine: `/chat` endpoint skeleton
-- [ ] Phase 2 — All 5 role-based agents wired in
-- [ ] Phase 2 — Per-school RAG (document upload + vectorstore)
-- [ ] Phase 2 — Chat history saved to DB
-- [ ] Phase 3 — Next.js frontend with white-labeling
-- [ ] Phase 3 — School subdomain routing
-- [ ] Phase 3 — PDF generation (lesson plans, worksheets)
+Merge completed features into `dev` through your team's usual review process. To bring a commit from another laptop, first push its branch from the original laptop, then run `git switch <branch>` and `git pull` on the other laptop.
